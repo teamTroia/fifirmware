@@ -49,8 +49,8 @@ void setup() {
   pinMode(auxPin, INPUT_PULLUP);
   pinMode(I2CPin1, INPUT_PULLDOWN);
   pinMode(I2CPin2, INPUT_PULLDOWN);
-  pinMode(LED_ID0, PWM);
-  pinMode(LED_ID1, PWM);
+  pinMode(LED_ID0, OUTPUT);
+  pinMode(LED_ID1, OUTPUT);
   pinMode(PC13, OUTPUT);
   pinMode(analogBat, INPUT_ANALOG);
 
@@ -64,12 +64,12 @@ void setup() {
   ROBO_ID += !digitalRead(IDPin0) + !digitalRead(IDPin1) * 2 + !digitalRead(IDPin2) * 4;
   CANAL = !digitalRead(chPin0) + !digitalRead(chPin1) * 2;
 
-  if(ROBO_ID < 3){
-    digitalWrite(LED_ID0, !digitalRead(IDPin0));
-    digitalWrite(LED_ID1, !digitalRead(IDPin1));
+  if(ROBO_ID < 3){    
+    digitalWrite(LED_ID0, digitalRead(IDPin0));
+    digitalWrite(LED_ID1, digitalRead(IDPin1));
   } else {
-    digitalWrite(LED_ID0, HIGH);
-    digitalWrite(LED_ID1, HIGH);
+    digitalWrite(LED_ID0, LOW);
+    digitalWrite(LED_ID1, LOW);
   }
 
   config_nrf24();
@@ -199,14 +199,15 @@ void verificaBateria() {
       digitalWrite(LED_ID0, lowBateryledState);
       lowBateryledState = !lowBateryledState;
       digitalWrite(LED_ID1, lowBateryledState);
+      lowBateryledTimer = millis();
     }
   } else {
-    if(ROBO_ID < 3){
-      digitalWrite(LED_ID0, !digitalRead(IDPin0));
-      digitalWrite(LED_ID1, !digitalRead(IDPin1));
+    if(ROBO_ID < 3){    
+      digitalWrite(LED_ID0, digitalRead(IDPin0));
+      digitalWrite(LED_ID1, digitalRead(IDPin1));
     } else {
-      digitalWrite(LED_ID0, HIGH);
-      digitalWrite(LED_ID1, HIGH);
+      digitalWrite(LED_ID0, LOW);
+      digitalWrite(LED_ID1, LOW);
     }
   }
 
