@@ -1,10 +1,7 @@
 #include "Arduino.h"
 
 #define BATMULT 3.065
-//3.07466135458
-//3.066395641193632020863697705803
-//3.07466135458
-#define LOWBAT_LEVEL 7.45
+#define LOWBAT_LEVEL 7.6
 
 #define IDPin0 PB5
 #define IDPin1 PB4
@@ -18,19 +15,19 @@
 #define I2CPin2 PB11
 int CONTROLEMANUAL = 0;
 
-#define LEDR PB7
-#define LEDG PB8
-#define LEDB PB6
+#define LED_ID0 PB7
+#define LED_ID1 PB6
 
 #define analogBat PA0
+#define NRF_BUFFER   21
 
 #include "nrfFifi.h"
 #include "motor.h"
-#include "ledStatus.h"
 
 bool novoDado = false;
 uint8_t ROBO_ID = 0;
-
+bool lowBateryledState = false;
+int lowBateryledTimer = 0;
 int ROBO_Vd[2], //Velocidade desejada rodas
     ROBO_V[2]; //
 
@@ -41,6 +38,7 @@ boolean LOWBAT = false;
 unsigned long int ultimaLidaNRF = 0,
                   ultimoDadoValido = 0,
                   ultimoSinalControle = 0;
+
 void verificaBateria();
 void setup() {
   pinMode(IDPin0, INPUT_PULLUP);
@@ -51,16 +49,14 @@ void setup() {
   pinMode(auxPin, INPUT_PULLUP);
   pinMode(I2CPin1, INPUT_PULLDOWN);
   pinMode(I2CPin2, INPUT_PULLDOWN);
-  pinMode(LEDR, PWM);
-  pinMode(LEDG, PWM);
-  pinMode(LEDB, PWM);
+  pinMode(LED_ID0, PWM);
+  pinMode(LED_ID1, PWM);
   pinMode(PC13, OUTPUT);
   pinMode(analogBat, INPUT_ANALOG);
 
   digitalWrite(PC13, HIGH);
-  pwmWrite(LEDR, 0);
-  pwmWrite(LEDG, 0);
-  pwmWrite(LEDB, 0);
+  pwmWrite(LED_ID0, 0);
+  pwmWrite(LED_ID1, 0);
 
   Serial.begin(115200);
 
@@ -68,9 +64,13 @@ void setup() {
   ROBO_ID += !digitalRead(IDPin0) + !digitalRead(IDPin1) * 2 + !digitalRead(IDPin2) * 4;
   CANAL = !digitalRead(chPin0) + !digitalRead(chPin1) * 2;
 
-  pwmWrite(LEDR, ID_COLOR[ROBO_ID][0]);
-  pwmWrite(LEDG, ID_COLOR[ROBO_ID][1]);
-  pwmWrite(LEDB, ID_COLOR[ROBO_ID][2]);
+  if(ROBO_ID < 3){
+    digitalWrite(LED_ID0, !digitalRead(IDPin0));
+    digitalWrite(LED_ID1, !digitalRead(IDPin1));
+  } else {
+    digitalWrite(LED_ID0, HIGH);
+    digitalWrite(LED_ID1, HIGH);
+  }
 
   config_nrf24();
   int DEBUG;
@@ -120,17 +120,17 @@ void loop() {
   if (novoDado) {
     novoDado = false;
     /* pacote = [ 'F' tipo_do_pacote n [n_bytes] 'I']
-          'F' => início do pacote
-          tipo_do_pacote =>| 'D' Velocidade da das rodas para x robos, n = 2*x, [n_bytes]= [V11, V12, V21, V22, ... Vx1, Vx2]
-                           | 'd' Velocidade da das rodas para 1 robos de ID especifico, n = 3, [n_bytes]= [ID, V1, V2]
-                           | 'U' Sinal de controle para x robos, n = 2*x, [n_bytes]= [V1, W1, V2, W2,... Vx, Wx] - (implementação futura)
-                           | 'u' Sinal de controle para 1 robos de ID especifico, n = 3, [n_bytes]= [ID V W] - (implementação futura)
-                           | 'C' seta configuração (implementação futura)
-                           | 'S' Status (implementação futura)
-                           | 'K'|'k' Continua comunicando  n = 0
-          n => numero de bytes seguintes
-          [n_bytes] => n bytes de dados
-          'I' => fim do pacote
+      'F' => início do pacote
+      tipo_do_pacote =>| 'D' Velocidade da das rodas para x robos, n = 2*x, [n_bytes]= [V11, V12, V21, V22, ... Vx1, Vx2]
+                        | 'd' Velocidade da das rodas para 1 robos de ID especifico, n = 3, [n_bytes]= [ID, V1, V2]
+                        | 'U' Sinal de controle para x robos, n = 2*x, [n_bytes]= [V1, W1, V2, W2,... Vx, Wx] - (implementação futura)
+                        | 'u' Sinal de controle para 1 robos de ID especifico, n = 3, [n_bytes]= [ID V W] - (implementação futura)
+                        | 'C' seta configuração (implementação futura)
+                        | 'S' Status (implementação futura)
+                        | 'K'|'k' Continua comunicando  n = 0
+      n => numero de bytes seguintes
+      [n_bytes] => n bytes de dados
+      'I' => fim do pacote
     */
     switch (pacote.tipo) {
       case 'D':
@@ -193,35 +193,21 @@ void verificaBateria() {
     lowBat = 0;
     LOWBAT = false;
   }
-  /// Bateria FIM
 
   if (LOWBAT) {
-    static int indLED = 0;
-
-    indLED++;
-    indLED &= 0x03;
-    switch (indLED) {
-      case 1:
-        pwmWrite(LEDR, 10000);
-        break;
-      case 2:
-        pwmWrite(LEDR, 0);
-        pwmWrite(LEDG, 10000);
-        break;
-      case 3:
-        pwmWrite(LEDG, 0);
-        pwmWrite(LEDB, 10000);
-        break;
-      default:
-        pwmWrite(LEDR, 0);
-        pwmWrite(LEDG, 0);
-        pwmWrite(LEDB, 0);
+    if(millis() - lowBateryledTimer >= 500){
+      digitalWrite(LED_ID0, lowBateryledState);
+      lowBateryledState = !lowBateryledState;
+      digitalWrite(LED_ID1, lowBateryledState);
     }
   } else {
-    pwmWrite(LEDR, ID_COLOR[ROBO_ID][0]);
-    pwmWrite(LEDG, ID_COLOR[ROBO_ID][1]);
-    pwmWrite(LEDB, ID_COLOR[ROBO_ID][2]);
-
+    if(ROBO_ID < 3){
+      digitalWrite(LED_ID0, !digitalRead(IDPin0));
+      digitalWrite(LED_ID1, !digitalRead(IDPin1));
+    } else {
+      digitalWrite(LED_ID0, HIGH);
+      digitalWrite(LED_ID1, HIGH);
+    }
   }
 
   if (millis() - ultimoEnvio > 5000) {
