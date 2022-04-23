@@ -99,6 +99,32 @@ void setup() {
   init_mpu();
 }
 
+float pid(float target, float atual){
+	float kp = 1;
+	float kd = 0;
+	float ki = 0;
+
+	float error = target - atual;
+
+	float output = error * kp ;
+
+	return output;
+}
+
+void motors_control(float linear, float angular) {
+  angular = pid(angular, - readAngularSpeed());
+
+  if(linear > 0 ) linear = map(linear, 0, 255, 60, 255);
+  if(linear < 0 ) linear = map(linear, 0, -255, -60, -255);
+  
+  float Vel_R = linear - angular; //ao somar o angular com linear em cada motor conseguimos a ideia de direcao do robo
+  float Vel_L = linear + angular;
+  
+  ROBO_V[0] = map(ROBO_Vd[0], -100, 100, -65535, 65535);
+  ROBO_V[1] = map(ROBO_Vd[1], -100, 100, -65535, 65535);
+  motorSetVel(ROBO_V[0], ROBO_V[1]);
+}
+
 void loop() {
   //Serial.println(readAngularSpeed());
   
@@ -164,8 +190,7 @@ void loop() {
 
 
   if (millis() - ultimoDadoValido > 1000) {
-    ROBO_Vd[0] = ROBO_Vd[1] = 0;
-    motorSTBY();
+    motors_control(0, 0);   
   } else {
     ROBO_V[0] = map(ROBO_Vd[0], -100, 100, -65535, 65535);
     ROBO_V[1] = map(ROBO_Vd[1], -100, 100, -65535, 65535);
