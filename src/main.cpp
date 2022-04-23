@@ -17,9 +17,10 @@ int CONTROLEMANUAL = 0;
 
 #define LED_ID0 PB7
 #define LED_ID1 PB6
+#define IMU_PIN PB8
 
 #define analogBat PA0
-#define NRF_BUFFER   43
+#define NRF_BUFFER   21
 
 #include "imuUtils.h"
 #include "nrfFifi.h"
@@ -39,7 +40,7 @@ boolean LOWBAT = false;
 unsigned long int ultimaLidaNRF = 0,
                   ultimoDadoValido = 0,
                   ultimoSinalControle = 0;
-
+bool iHaveIMU = false;
 void verificaBateria();
 void setup() {
   pinMode(IDPin0, INPUT_PULLUP);
@@ -48,12 +49,14 @@ void setup() {
   pinMode(chPin0, INPUT_PULLUP);
   pinMode(chPin1, INPUT_PULLUP);
   pinMode(auxPin, INPUT_PULLUP);
+  pinMode(IMU_PIN, INPUT_PULLUP);
   pinMode(I2CPin1, INPUT_PULLDOWN);
   pinMode(I2CPin2, INPUT_PULLDOWN);
   pinMode(LED_ID0, OUTPUT);
   pinMode(LED_ID1, OUTPUT);
   pinMode(PC13, OUTPUT);
   pinMode(analogBat, INPUT_ANALOG);
+  iHaveIMU = !digitalRead(IMU_PIN);
 
   digitalWrite(PC13, HIGH);
   pwmWrite(LED_ID0, 0);
@@ -96,7 +99,9 @@ void setup() {
   if (CONTROLEMANUAL){
     
   }
-  init_mpu();
+  if(iHaveIMU){
+    init_mpu();
+  }
 }
 
 float pid(float target, float atual){
@@ -123,8 +128,6 @@ void motors_control(float linear, float angular) {
 }
 
 void loop() {
-  //Serial.println(readAngularSpeed());
-  
   if (millis() - ultimaLidaNRF > 10) {
     ultimaLidaNRF  = millis();
     NRF_ACK = recebe_dados();
@@ -162,12 +165,8 @@ void loop() {
     switch (pacote.tipo) {
       case 'D':
         if (ROBO_ID * 2 < pacote.n) {
-          int pos = 3;
-          pos += ROBO_ID * 12;
-          ROBO_Vd[0] = (pacote.dado[pos++]-48)*100 + (pacote.dado[pos++]-48)*10 + (pacote.dado[pos++]-48) + 
-            (pacote.dado[++pos]-48)*0.1F + (pacote.dado[pos++]-48)*0.01F;
-          ROBO_Vd[1] = (pacote.dado[pos++]-48)*100 + (pacote.dado[pos++]-48)*10 + (pacote.dado[pos++]-48) + 
-            (pacote.dado[++pos]-48)*0.1F + (pacote.dado[pos++]-48)*0.01F;
+          ROBO_Vd[0] = pacote.dado[ROBO_ID * 2 + 0] - 100;
+          ROBO_Vd[1] = pacote.dado[ROBO_ID * 2 + 1] - 100;
           ultimoDadoValido = millis();
         }
         break;
@@ -191,12 +190,26 @@ void loop() {
 
 
   if (millis() - ultimoDadoValido > 1000) {
-    motors_control(100, 0);   
+   if(iHaveIMU){  
+      motors_control(0, 0); 
+    } else {  
+      motorStop();
+    }
   } else {
-    ROBO_V[0] = map(ROBO_Vd[0], -100, 100, -65535, 65535);
-    ROBO_V[1] = map(ROBO_Vd[1], -100, 100, -65535, 65535);
-    motorSetVel(ROBO_V[0], ROBO_V[1]);
+    if(iHaveIMU){
+      Serial.print(ROBO_Vd[0]);
+      Serial.print("---");
+      Serial.println(ROBO_Vd[1]);
+      motors_control(ROBO_Vd[0], ROBO_Vd[1]); 
+    } else {
+      float v1 = ROBO_Vd[0] + 3.4 * ROBO_Vd[1];
+      float v2 = ROBO_Vd[0] - 3.4 * ROBO_Vd[1];
+      ROBO_V[0] = map(v1, -100, 100, -65535, 65535);
+      ROBO_V[1] = map(v2, -100, 100, -65535, 65535);
+      motorSetVel(ROBO_V[0], ROBO_V[1]);
+    }
   }
+
 }
 
 /// Bateria
