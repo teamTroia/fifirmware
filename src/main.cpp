@@ -19,7 +19,7 @@ int CONTROLEMANUAL = 0;
 #define LED_ID1 PB6
 
 #define analogBat PA0
-#define NRF_BUFFER   21
+#define NRF_BUFFER   43
 
 #include "imuUtils.h"
 #include "nrfFifi.h"
@@ -29,7 +29,7 @@ bool novoDado = false;
 uint8_t ROBO_ID = 0;
 bool lowBateryledState = false;
 int lowBateryledTimer = 0;
-int ROBO_Vd[2], //Velocidade desejada rodas
+float ROBO_Vd[2], //Velocidade desejada rodas
     ROBO_V[2]; //
 
 float bateriaV;
@@ -100,28 +100,25 @@ void setup() {
 }
 
 float pid(float target, float atual){
-	float kp = 1;
+	float kp = 20;
 	float kd = 0;
 	float ki = 0;
 
 	float error = target - atual;
-
 	float output = error * kp ;
-
 	return output;
 }
 
 void motors_control(float linear, float angular) {
-  angular = pid(angular, - readAngularSpeed());
-
-  if(linear > 0 ) linear = map(linear, 0, 255, 60, 255);
-  if(linear < 0 ) linear = map(linear, 0, -255, -60, -255);
-  
+  //Serial.print("Zvel: ");
+  angular = pid(angular, -readAngularSpeed());
+  angular = angular > 100 ? 100 : angular;
   float Vel_R = linear - angular; //ao somar o angular com linear em cada motor conseguimos a ideia de direcao do robo
   float Vel_L = linear + angular;
-  
-  ROBO_V[0] = map(ROBO_Vd[0], -100, 100, -65535, 65535);
-  ROBO_V[1] = map(ROBO_Vd[1], -100, 100, -65535, 65535);
+  Vel_L = abs(Vel_L) < 10? 0 : Vel_L;
+  Vel_R = abs(Vel_R) < 10? 0 : Vel_R;
+  ROBO_V[0] = map(Vel_L, -100, 100, -65535, 65535);
+  ROBO_V[1] = map(Vel_R, -100, 100, -65535, 65535);
   motorSetVel(ROBO_V[0], ROBO_V[1]);
 }
 
@@ -165,8 +162,12 @@ void loop() {
     switch (pacote.tipo) {
       case 'D':
         if (ROBO_ID * 2 < pacote.n) {
-          ROBO_Vd[0] = pacote.dado[ROBO_ID * 2 + 0] - 100;
-          ROBO_Vd[1] = pacote.dado[ROBO_ID * 2 + 1] - 100;
+          int pos = 3;
+          pos += ROBO_ID * 12;
+          ROBO_Vd[0] = (pacote.dado[pos++]-48)*100 + (pacote.dado[pos++]-48)*10 + (pacote.dado[pos++]-48) + 
+            (pacote.dado[++pos]-48)*0.1F + (pacote.dado[pos++]-48)*0.01F;
+          ROBO_Vd[1] = (pacote.dado[pos++]-48)*100 + (pacote.dado[pos++]-48)*10 + (pacote.dado[pos++]-48) + 
+            (pacote.dado[++pos]-48)*0.1F + (pacote.dado[pos++]-48)*0.01F;
           ultimoDadoValido = millis();
         }
         break;
@@ -190,13 +191,12 @@ void loop() {
 
 
   if (millis() - ultimoDadoValido > 1000) {
-    motors_control(0, 0);   
+    motors_control(100, 0);   
   } else {
     ROBO_V[0] = map(ROBO_Vd[0], -100, 100, -65535, 65535);
     ROBO_V[1] = map(ROBO_Vd[1], -100, 100, -65535, 65535);
     motorSetVel(ROBO_V[0], ROBO_V[1]);
   }
-
 }
 
 /// Bateria
