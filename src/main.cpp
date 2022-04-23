@@ -21,6 +21,7 @@ int CONTROLEMANUAL = 0;
 #define analogBat PA0
 #define NRF_BUFFER   21
 
+#include "imuUtils.h"
 #include "nrfFifi.h"
 #include "motor.h"
 
@@ -95,9 +96,12 @@ void setup() {
   if (CONTROLEMANUAL){
     
   }
+  init_mpu();
 }
 
 void loop() {
+  //Serial.println(readAngularSpeed());
+  
   if (millis() - ultimaLidaNRF > 10) {
     ultimaLidaNRF  = millis();
     NRF_ACK = recebe_dados();

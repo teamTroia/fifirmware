@@ -19,7 +19,7 @@ static uint8_t RECEBE[NRF_BUFFER];
 static uint8_t ENVIA [NRF_BUFFER];
 
 static int16_t       espera_ack;
-static bool      NRF_ACK, NRF_ACK_ENVIA;
+static bool NRF_ACK, NRF_ACK_ENVIA;
 static uint8_t NRF_RECEBE[NRF_BUFFER];
 static uint8_t NRF_ENVIA [NRF_BUFFER];
 
