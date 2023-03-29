@@ -14,7 +14,7 @@
 
 //Headers-------------------------------------------
 inline void motorInit(void) __attribute__((always_inline));                   //Inicializa Motor
-inline void motorSetVel(int velA, int velB ) __attribute__((always_inline));  //seta velocidade -255a255 do motor A e B
+inline void motorSetVel(int velA, int velB ) __attribute__((always_inline));  //seta velocidade do motor A e B
 inline void motorStop(void) __attribute__((always_inline));                   //Trava motores
 inline void motorSTBY(void) __attribute__((always_inline));                   // Desliga motores
 
