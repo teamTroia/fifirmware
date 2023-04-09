@@ -1,4 +1,5 @@
 #include "Arduino.h"
+#include "Servo.h"
 
 #define BATMULT 3.065
 #define LOWBAT_LEVEL 7.6
@@ -85,11 +86,10 @@ void setup() {
 
     verificaNRF();
 
-    motorSetVel(50000, -50000);
+    motorSetVel(2000, 1000);
     delay(750);
-    motorSetVel(-50000, 50000);
+    motorSetVel(1000, 2000);
     delay(750);
-    motorSTBY();
   }
   CONTROLEMANUAL = !digitalRead(chPin1);
   if (CONTROLEMANUAL){
@@ -118,8 +118,8 @@ void motors_control(float linear, float angular) {
   float Vel_L = linear + angular;
   Vel_L = abs(Vel_L) < 10? 0 : Vel_L;
   Vel_R = abs(Vel_R) < 10? 0 : Vel_R;
-  ROBO_V[0] = map(Vel_L, -100, 100, -65535, 65535);
-  ROBO_V[1] = map(Vel_R, -100, 100, -65535, 65535);
+  ROBO_V[0] = map(Vel_L, -100, 100, 1000, 2000);
+  ROBO_V[1] = map(Vel_R, -100, 100, 1000, 2000);
   motorSetVel(ROBO_V[1], ROBO_V[0]);
 }
 
