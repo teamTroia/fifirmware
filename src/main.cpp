@@ -90,6 +90,7 @@ void setup() {
     delay(750);
     motorSetVel(1000, 2000);
     delay(750);
+    motorStop();
   }
   CONTROLEMANUAL = !digitalRead(chPin1);
   if (CONTROLEMANUAL){
