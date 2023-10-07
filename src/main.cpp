@@ -86,9 +86,9 @@ void setup() {
 
     verificaNRF();
 
-    motorSetVel(2000, 1000);
+    motorSetVel(100, -100);
     delay(750);
-    motorSetVel(1000, 2000);
+    motorSetVel(-100, 100);
     delay(750);
     motorStop();
   }
@@ -119,8 +119,8 @@ void motors_control(float linear, float angular) {
   float Vel_L = linear + angular;
   Vel_L = abs(Vel_L) < 10? 0 : Vel_L;
   Vel_R = abs(Vel_R) < 10? 0 : Vel_R;
-  ROBO_V[0] = map(Vel_L, -100, 100, 1000, 2000);
-  ROBO_V[1] = map(Vel_R, -100, 100, 1000, 2000);
+  ROBO_V[0] = map(Vel_L, -100, 100, -25, 25);
+  ROBO_V[1] = map(Vel_R, -100, 100, -25, 25);
   motorSetVel(ROBO_V[1], ROBO_V[0]);
 }
 
