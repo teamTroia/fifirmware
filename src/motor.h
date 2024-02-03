@@ -1,4 +1,4 @@
-#include <SimpleFOC.h>
+#include "SimpleFOC.h"
 
 //Headers-------------------------------------------
 inline void motorInit(void) __attribute__((always_inline));                   //Inicializa Motor
@@ -7,8 +7,8 @@ inline void motorStop(void) __attribute__((always_inline));                   //
 
 //Variáveis-----------------------------------------
   // init BLDC motor
-  BLDCMotor motA = BLDCMotor(7);
-  BLDCMotor motB = BLDCMotor(7);
+  BLDCMotor motA = BLDCMotor(7,8.5);
+  BLDCMotor motB = BLDCMotor(7,8.5);
   // init driver
   BLDCDriver3PWM driverA = BLDCDriver3PWM(PB0, PA7, PA6, PB1);
   BLDCDriver3PWM driverB = BLDCDriver3PWM(PA3, PA2, PA1, PA4);
@@ -16,8 +16,8 @@ inline void motorStop(void) __attribute__((always_inline));                   //
 //Funções------------------------------------------
 void motorInit() {
   // power supply voltage
-  driverA.voltage_power_supply = 8;
-  driverB.voltage_power_supply = 8;
+  driverA.voltage_power_supply = 12;
+  driverB.voltage_power_supply = 12;
   driverA.init();
   driverB.init();
   // link the motor and the driver
@@ -26,16 +26,19 @@ void motorInit() {
   // limiting motor movements
   motA.phase_resistance = 8.5; // [Ohm]
   motB.phase_resistance = 8.5; // [Ohm]
-  motA.current_limit = 0.5;   // [Amps] - if phase resistance defined
-  motB.current_limit = 0.5;
-  //motA.voltage_limit = 3;   // [V] - if phase resistance not defined
-  //motA.velocity_limit = 5; // [rad/s] cca 50rpm
-  //motB.voltage_limit = 3; 
-  //motB.velocity_limit = 5;
+  motA.current_limit = 0.67;   // [Amps] - if phase resistance defined
+  motB.current_limit = 0.67;
+  motA.voltage_limit = 5;   // [V] - if phase resistance not defined
+  motA.velocity_limit = 5; // [rad/s] cca 50rpm
+  motB.voltage_limit = 5; 
+  motB.velocity_limit = 5;
   // set control loop type to be used
 
   motA.controller = MotionControlType::velocity_openloop;
+  motA.torque_controller = TorqueControlType::foc_current;
+
   motB.controller = MotionControlType::velocity_openloop;
+  motB.torque_controller = TorqueControlType::foc_current;
   // initialize motor
   motA.init();
   motB.init();
@@ -51,18 +54,18 @@ inline void motorStop(){
 inline void motorSetVel(int velA, int velB) {
   //set_MotorA(vel1);
   if (velA > 0) {
-    if (velA > 25) velA = 25;
+    if (velA > 50) velA = 50;
   } else  {
     velA = velA;
-    if (velA < -25) velA = -25;
+    if (velA < -50) velA = -50;
   }
   
   // set_MotorB(vel2);
   if (velB > 0) {
-    if (velB > 25) velB = 25;
+    if (velB > 50) velB = 50;
   } else  {
     velB = velB;
-    if (velB < -25) velB = -25;
+    if (velB < -50) velB = -50;
   }
 
   motA.target = velA;

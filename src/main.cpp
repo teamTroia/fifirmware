@@ -1,5 +1,4 @@
-#include "Arduino.h"
-#include "Servo.h"
+#include <Arduino.h>
 
 #define BATMULT 3.065
 #define LOWBAT_LEVEL 7.6
@@ -125,6 +124,7 @@ void motors_control(float linear, float angular) {
 }
 
 void loop() {
+  motorSetVel(50,-50);
   if (millis() - ultimaLidaNRF > 10) {
     ultimaLidaNRF  = millis();
     NRF_ACK = recebe_dados();
