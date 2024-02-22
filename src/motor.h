@@ -3,7 +3,8 @@
 //Headers-------------------------------------------
 inline void motorInit(void) __attribute__((always_inline));                   //Inicializa Motor
 inline void motorSetVel(int velA, int velB ) __attribute__((always_inline));  //seta velocidade motor A e B
-inline void motorStop(void) __attribute__((always_inline));                   //Trava motores
+inline void motorStop(void) __attribute__((always_inline));                   //Desliga motores
+inline void motorRun(void) __attribute__((always_inline));                    //Religa motores
 
 //Variáveis-----------------------------------------
   // init BLDC motor
@@ -24,13 +25,13 @@ void motorInit() {
   motA.linkDriver(&driverA);
   motB.linkDriver(&driverB);
   // limiting motor movements
-  motA.phase_resistance = 8.5; // [Ohm]
-  motB.phase_resistance = 8.5; // [Ohm]
-  motA.current_limit = 0.67;   // [Amps] - if phase resistance defined
-  motB.current_limit = 0.67;
-  motA.voltage_limit = 5;   // [V] - if phase resistance not defined
+  motA.phase_resistance = 11.25; // [Ohm]
+  motB.phase_resistance = 11.25; // [Ohm]
+  motA.current_limit = 1;   // [Amps] - if phase resistance defined
+  motB.current_limit = 1;
+  motA.voltage_limit = 8;   // [V] - if phase resistance not defined
   motA.velocity_limit = 5; // [rad/s] cca 50rpm
-  motB.voltage_limit = 5; 
+  motB.voltage_limit = 8; 
   motB.velocity_limit = 5;
   // set control loop type to be used
 
@@ -44,32 +45,50 @@ void motorInit() {
   motB.init();
 }
 
-inline void motorStop(){
-  motA.target = 0;
-  motB.target = 0;
-  motA.move();
-  motB.move();
+inline void motorRun(){
+  motA.enable();
+  motB.enable();
 }
+
+inline void motorStop(){
+  motA.disable();
+  motB.disable();
+  // motA.move();
+  // motB.move();
+}
+
 
 inline void motorSetVel(int velA, int velB) {
   //set_MotorA(vel1);
-  if (velA > 0) {
-    if (velA > 50) velA = 50;
-  } else  {
-    velA = velA;
-    if (velA < -50) velA = -50;
-  }
-  
-  // set_MotorB(vel2);
-  if (velB > 0) {
-    if (velB > 50) velB = 50;
-  } else  {
-    velB = velB;
-    if (velB < -50) velB = -50;
-  }
+  if (velA == 0 and velB == 0);
+  else{
+    if (velA > 0) {
+      if (velA > 50) {
+        velA = 50;
+      }
+    } else  {
+      velA = velA;
+      if (velA < -50) {
+        velA = -50;
 
-  motA.target = velA;
-  motB.target = velB;
-  motA.move();
-  motB.move();
+      }
+    }
+    
+    // set_MotorB(vel2);
+    if (velB > 0) {
+      if (velB > 50) {
+        velB = 50;
+      }
+    } else  {
+      velB = velB;
+      if (velB < -50) {
+        velB = -50;
+        
+      }
+    }
+    motA.target = velA;
+    motB.target = -velB;
+    motA.move();
+    motB.move();
+  }
 }

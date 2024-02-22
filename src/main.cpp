@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #define BATMULT 3.065
-#define LOWBAT_LEVEL 7.6
+#define LOWBAT_LEVEL 11.6
 
 #define IDPin0 PB5
 #define IDPin1 PB4
@@ -40,6 +40,9 @@ boolean LOWBAT = false;
 unsigned long int ultimaLidaNRF = 0,
                   ultimoDadoValido = 0,
                   ultimoSinalControle = 0;
+
+boolean MOTOROFF = false;
+
 void verificaBateria();
 void setup() {
   pinMode(IDPin0, INPUT_PULLUP);
@@ -95,7 +98,7 @@ void setup() {
   if (CONTROLEMANUAL){
     
   }
-  init_mpu();
+  //init_mpu();
   
 }
 
@@ -110,21 +113,22 @@ float pid(float target, float atual){
 }
 
 void motors_control(float linear, float angular) {
-  Serial.print("ANGULAR: ");
-  Serial.println(angular);
-  angular = pid(angular, readAngularSpeed());
-  angular = angular > 100 ? 100 : angular;
-  float Vel_R = linear - angular; //ao somar o angular com linear em cada motor conseguimos a ideia de direcao do robo
-  float Vel_L = linear + angular;
-  Vel_L = abs(Vel_L) < 10? 0 : Vel_L;
-  Vel_R = abs(Vel_R) < 10? 0 : Vel_R;
-  ROBO_V[0] = map(Vel_L, -100, 100, -25, 25);
-  ROBO_V[1] = map(Vel_R, -100, 100, -25, 25);
+  // Serial.print("ANGULAR: ");
+  // Serial.println(angular);
+  // angular = pid(angular, readAngularSpeed());
+  // angular = angular > 100 ? 100 : angular;
+  float Vel_R = linear + angular; //ao somar o angular com linear em cada motor conseguimos a ideia de direcao do robo
+  float Vel_L = linear - angular;
+  //Vel_L = abs(Vel_L) < 10? 0 : Vel_L;
+  //Vel_R = abs(Vel_R) < 10? 0 : Vel_R;
+  ROBO_V[0] = map(Vel_L, -100, 100, -50, 50);
+  ROBO_V[1] = map(Vel_R, -100, 100, -50, 50);
   motorSetVel(ROBO_V[1], ROBO_V[0]);
 }
 
 void loop() {
-  motorSetVel(50,-50);
+  //motors_control(-15,0);
+  //return;
   if (millis() - ultimaLidaNRF > 10) {
     ultimaLidaNRF  = millis();
     NRF_ACK = recebe_dados();
@@ -150,10 +154,6 @@ void loop() {
       'F' => início do pacote
       tipo_do_pacote =>| 'D' Velocidade da das rodas para x robos, n = 2*x, [n_bytes]= [V11, V12, V21, V22, ... Vx1, Vx2]
                         | 'd' Velocidade da das rodas para 1 robos de ID especifico, n = 3, [n_bytes]= [ID, V1, V2]
-                        | 'U' Sinal de controle para x robos, n = 2*x, [n_bytes]= [V1, W1, V2, W2,... Vx, Wx] - (implementação futura)
-                        | 'u' Sinal de controle para 1 robos de ID especifico, n = 3, [n_bytes]= [ID V W] - (implementação futura)
-                        | 'C' seta configuração (implementação futura)
-                        | 'S' Status (implementação futura)
                         | 'K'|'k' Continua comunicando  n = 0
       n => numero de bytes seguintes
       [n_bytes] => n bytes de dados
@@ -197,9 +197,14 @@ void loop() {
 
 
   if (millis() - ultimoDadoValido > 1000) {
-   motors_control(0, 0);  
-  } else {
-    motors_control(ROBO_Vd[0], ROBO_Vd[1]); 
+   motorStop();
+   MOTOROFF = true; 
+  } 
+  else if(MOTOROFF) {
+    motorRun();
+    MOTOROFF = false;
+  }else {
+    motors_control(ROBO_Vd[0], ROBO_Vd[1]);
   }
 
 }
