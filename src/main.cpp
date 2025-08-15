@@ -22,9 +22,9 @@ int CONTROLEMANUAL = 0;
 #define analogBat PA0
 #define NRF_BUFFER   21
 
-#include "imuUtils.h"
-#include "nrfFifi.h"
-#include "motor.h"
+#include "../lib/imuUtils.h"
+#include "../lib/nrfFifi.h"
+#include "../lib/motor.h"
 
 bool novoDado = false;
 uint8_t ROBO_ID = 0;
